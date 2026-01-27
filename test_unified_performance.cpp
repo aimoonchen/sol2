@@ -9,6 +9,14 @@
 #include <string>
 #include <algorithm>
 #include <numeric>
+#include <clocale>
+
+// Windows中文支持
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 // 启用所有C++23优化的统一宏
 #define SOL_ENABLE_CXX23_OPTIMIZATIONS 1
@@ -261,11 +269,32 @@ void run_comprehensive_performance_tests() {
 }
 
 // ===============================
+// Windows中文编码设置
+// ===============================
+
+void setup_chinese_encoding() {
+#ifdef _WIN32
+    // 设置控制台代码页为UTF-8
+    SetConsoleCP(65001);        // UTF-8 代码页
+    SetConsoleOutputCP(65001);  // UTF-8 代码页
+    
+    // 简单的locale设置
+    setlocale(LC_ALL, "");
+#else
+    // 非Windows系统设置UTF-8 locale
+    setlocale(LC_ALL, "en_US.UTF-8");
+#endif
+}
+
+// ===============================
 // 主测试函数
 // ===============================
 
 int main() {
     try {
+        // 设置中文编码支持
+        setup_chinese_encoding();
+        
         // 1. 特性检测
         test_feature_detection();
         
