@@ -27,6 +27,7 @@
 #include <sol/stack_core.hpp>
 #include <sol/usertype_traits.hpp>
 #include <sol/inheritance.hpp>
+#include <sol/performance_config.hpp>
 #include <memory>
 #include <functional>
 #include <utility>
@@ -38,13 +39,13 @@
 
 namespace sol { namespace stack {
 	template <typename Handler>
-	bool loose_table_check(lua_State* L_, int index, Handler&& handler, record& tracking) {
+	SOL_HOT_PATH bool loose_table_check(lua_State* L_, int index, Handler&& handler, record& tracking) {
 		tracking.use(1);
 		type t = type_of(L_, index);
-		if (t == type::table) {
+		SOL_IF_LIKELY(t == type::table) {
 			return true;
 		}
-		if (t != type::userdata) {
+		SOL_IF_UNLIKELY(t != type::userdata) {
 			handler(L_, index, type::table, t, "value is not a table or a userdata that can behave like one");
 			return false;
 		}

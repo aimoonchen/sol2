@@ -24,6 +24,8 @@
 #ifndef SOL_TRAITS_HPP
 #define SOL_TRAITS_HPP
 
+#include <sol/performance_config.hpp>
+#include <sol/concepts.hpp>
 #include <sol/tuple.hpp>
 #include <sol/bind_traits.hpp>
 #include <sol/pointer_like.hpp>
@@ -745,6 +747,57 @@ namespace sol { namespace meta {
 	struct iterator_tag<T, conditional_t<false, typename std::iterator_traits<T>::iterator_category, void>> {
 		using type = typename std::iterator_traits<T>::iterator_category;
 	};
+
+#if SOL_IS_ON(SOL_USE_CONCEPTS)
+	// Fast concept-based type checking for hot paths
+	template <typename T>
+	SOL_CONSTEVAL bool is_lua_basic_type() {
+		return LuaBasicType<T>;
+	}
+
+	template <typename T>
+	SOL_CONSTEVAL bool is_lua_arithmetic() {
+		return LuaArithmetic<T>;
+	}
+
+	template <typename T>
+	SOL_CONSTEVAL bool is_lua_string() {
+		return LuaString<T>;
+	}
+
+	template <typename T>
+	SOL_CONSTEVAL bool is_lua_container() {
+		return LuaContainer<T>;
+	}
+
+	template <typename T>
+	SOL_CONSTEVAL bool needs_runtime_type_check() {
+		return NeedsRuntimeTypeCheck<T>;
+	}
+
+	template <typename T>
+	SOL_CONSTEVAL bool is_lightweight_usertype() {
+		return LightweightUserType<T>;
+	}
+
+	// Optimized type trait shortcuts using concepts
+	template <typename T>
+	constexpr inline bool fast_is_arithmetic_v = LuaArithmetic<T>;
+
+	template <typename T>
+	constexpr inline bool fast_is_string_v = LuaString<T>;
+
+	template <typename T>  
+	constexpr inline bool fast_is_container_v = LuaContainer<T>;
+
+	template <typename T>
+	constexpr inline bool fast_is_usertype_v = LuaUserType<T>;
+
+	template <typename T>
+	constexpr inline bool fast_is_callable_v = LuaCallable<T>;
+
+#endif // SOL_USE_CONCEPTS
+
 }}     // namespace sol::meta
 
 #endif // SOL_TRAITS_HPP

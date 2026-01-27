@@ -24,6 +24,7 @@
 #ifndef SOL_STACK_CORE_HPP
 #define SOL_STACK_CORE_HPP
 
+#include <sol/performance_config.hpp>
 #include <sol/types.hpp>
 #include <sol/inheritance.hpp>
 #include <sol/error_handler.hpp>
@@ -70,12 +71,35 @@ namespace sol {
 		using unique_destructor = void (*)(void*);
 		using unique_tag = detail::inheritance_unique_cast_function;
 
-		inline void* alloc_newuserdata(lua_State* L, std::size_t bytesize) {
+		SOL_FORCE_INLINE void* alloc_newuserdata(lua_State* L, std::size_t bytesize) {
 #if SOL_LUA_VERSION_I_ >= 504
 			return lua_newuserdatauv(L, bytesize, 1);
 #else
 			return lua_newuserdata(L, bytesize);
 #endif
+		}
+
+		// C++23 optimized cache-line aware alignment
+		SOL_CONSTEVAL std::size_t optimal_alignment_for(std::size_t base_alignment) {
+			using namespace sol::detail;
+			// Use hardware cache line size for better performance
+			constexpr std::size_t cache_line = hardware_destructive_interference_size;
+			if (base_alignment >= cache_line) return base_alignment;
+			return cache_line;
+		}
+
+		template<typename T>
+		SOL_CONSTEVAL std::size_t cache_optimized_size() {
+			constexpr std::size_t base_size = sizeof(T);
+			constexpr std::size_t cache_line = sol::detail::hardware_destructive_interference_size;
+			
+			// Align to cache line boundary for frequently accessed objects
+			if constexpr (base_size <= cache_line / 2) {
+				return cache_line;
+			}
+			else {
+				return ((base_size + cache_line - 1) / cache_line) * cache_line;
+			}
 		}
 
 		constexpr std::uintptr_t align(std::size_t alignment, std::uintptr_t ptr, std::size_t& space) {
